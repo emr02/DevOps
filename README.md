@@ -87,21 +87,25 @@ ENTRYPOINT ["java", "-jar", "myapp.jar"]: Sets the entry point to run the JAR fi
 docker build -t simpleapi .
 docker run -p 8080:8080 --name simpleapi simpleapi
 
+docker build -t simple-api-student .
 docker run -p 8080:8080 --net=app-network --name simple-api-student simple-api-student
 
 docker build -t simple-http-server .
-docker run -p 8080:80 --name simple-http-server-container -d simple-http-server
+docker run -p 80:80 --name simple-http-server -d simple-http-server
 
 docker stats simple-http-server
 docker inspect simple-http-server
 docker logs simple-http-server
 
-docker cp simple-http-server-container:/usr/local/apache2/conf/httpd.conf ./httpd.conf
+docker cp simple-http-server:/usr/local/apache2/conf/httpd.conf ./httpd.conf
 
 Benefits of Using docker cp to Retrieve httpd.conf
 Customization: You can modify the default configuration to add or change settings according to your requirements.
 Consistency: Ensures that you start with the default configuration provided by the image, which is known to work, and then make incremental changes.
 Version Control: You can keep the customized configuration file in version control along with your Dockerfile and other project files.
 
+
+docker build -t simple-http-server .
+docker run -p 80:80 --net=app-network --name simple-http-server -d simple-http-server
 
 
