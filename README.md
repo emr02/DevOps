@@ -138,9 +138,9 @@ docker run -p 5432:5432 --net=app-network --name mypostgres -v data:/var/lib/pos
 docker build -t simple-api-student .
 docker run -p 8080:8080 --net=app-network --name simple-api-student simple-api-student
 
-# Server
+# Server, 8040 car port 80:80 ne marchait vraiment pas
 docker build -t simple-http-server .
-docker run -p 80:80 --net=app-network --name simple-http-server -d simple-http-server
+docker run -p 8040:80 --net=app-network --name simple-http-server -d simple-http-server
 
 # To check
 docker stats simple-http-server
