@@ -1,8 +1,6 @@
-## DevOps
-
 # TP1
 
-## Dockerfile (Question 1-1) 
+## Database
 
 ```sh
 FROM postgres:14.1-alpine
@@ -14,28 +12,44 @@ ENV POSTGRES_DB=db \
 COPY ./initdb /docker-entrypoint-initdb.d/
 ```
 
-## Build
+- **FROM** définit l'image de base du conteneur, dans ce cas, PostgreSQL.  
+- **COPY** transfère un fichier depuis la machine hôte vers un répertoire spécifique du conteneur Docker.  
+- **ENV** sert à définir des variables d'environnement au sein du conteneur Docker.
+
+Create network, communication entre 2 conteneurs, il faut créer un réseau commun
+```sh
+docker network create app-network
+```
+
+To restart admirer
+```sh
+docker run -d --name adminer --network app-network -p 8090:8080 adminer
+```
+
+Build docker image
+```sh
 docker build -t mypostgres .
+```
 
-## Run the PostgreSQL Container with Volume
-
+Run the PostgreSQL Container with Volume
+```sh
 docker run -p 5432:5432 --net=app-network --name mypostgres -v data:/var/lib/postgresql/data mypostgres
 
-## Run Adminer
+-p exposer les ports du conteneur sur la machine hôte.  
+--name sert à attribuer un nom au conteneur.  
+-v gère les volumes pour la persistance des données, sinon si container détruit, données conservées
+```
+Run Adminer
+```sh
 docker run -p "8090:8080" --net=app-network --name=adminer -d adminer
-
-
-### Answer to Question
+```
 
 **1-1 Why should we run the container with a flag -e to give the environment variables?**
 
-Using the `-e` flag to pass environment variables at runtime is more secure than hardcoding them in the Dockerfile. This approach prevents sensitive information, such as passwords, from being stored in plain text within the Dockerfile, which could be exposed if the Dockerfile is shared or stored in version control.
+Utiliser l'option `-e` pour passer des variables d'environnement lors de l'exécution est plus sûr que de les écrire directement dans le Dockerfile. Cela évite de stocker des informations sensibles, comme des mots de passe, en clair dans le fichier, ce qui pourrait poser un risque si le Dockerfile est partagé ou enregistré dans un gestionnaire de versions.
 
-COPY ./initdb /docker-entrypoint-initdb.d/ dans Dockerfile
+## Verify Data Persistence
 
-initdb folder created with sql, build and run again , it works.
-
-### Verify Data Persistence
 ```sh
 docker exec -it mypostgres psql -U usr -d db -c "SELECT * FROM departments;"
 ```
