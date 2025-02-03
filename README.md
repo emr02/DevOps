@@ -300,7 +300,7 @@ En résumé, ce fichier configure un backend, une base de données PostgreSQL et
 
 ```shell
 # Se connecter à Docker Hub :
- docker login
+docker login
 
 #Taguer votre image :
 docker tag mypostgres wanoni/my-database:1.0
@@ -308,8 +308,6 @@ docker tag mypostgres wanoni/my-database:1.0
 # Pousser l'image vers Docker Hub :
 docker push wanoni/my-database:1.0
 ```
-
----
 
 **1-10 Why do we put our images into an online repo?**
 
