@@ -16,31 +16,36 @@ COPY ./initdb /docker-entrypoint-initdb.d/
 - **COPY** transfère un fichier depuis la machine hôte vers un répertoire spécifique du conteneur Docker.  
 - **ENV** sert à définir des variables d'environnement au sein du conteneur Docker.
 
-Create network, communication entre 2 conteneurs, il faut créer un réseau commun
 ```sh
+# Create network, communication entre 2 conteneurs, il faut créer un réseau commun
+
 docker network create app-network
 ```
 
-To restart admirer
 ```sh
+# To restart admirer
+
 docker run -d --name adminer --network app-network -p 8090:8080 adminer
 ```
 
-Build docker image
 ```sh
+# Build docker image
+
 docker build -t mypostgres .
 ```
 
-Run the PostgreSQL Container with Volume
 ```sh
+# Run the PostgreSQL Container with Volume
+
 docker run -p 5432:5432 --net=app-network --name mypostgres -v data:/var/lib/postgresql/data mypostgres
 
 -p exposer les ports du conteneur sur la machine hôte.  
 --name sert à attribuer un nom au conteneur.  
 -v gère les volumes pour la persistance des données, sinon si container détruit, données conservées
 ```
-Run Adminer
 ```sh
+#Run Adminer
+
 docker run -p "8090:8080" --net=app-network --name=adminer -d adminer
 ```
 
@@ -48,15 +53,13 @@ docker run -p "8090:8080" --net=app-network --name=adminer -d adminer
 
 Utiliser l'option `-e` pour passer des variables d'environnement lors de l'exécution est plus sûr que de les écrire directement dans le Dockerfile. Cela évite de stocker des informations sensibles, comme des mots de passe, en clair dans le fichier, ce qui pourrait poser un risque si le Dockerfile est partagé ou enregistré dans un gestionnaire de versions.
 
-## Verify Data Persistence
-
-```sh
-docker exec -it mypostgres psql -U usr -d db -c "SELECT * FROM departments;"
-```
-
 **1-2 Why do we need a volume to be attached to our postgres container?**
 
-Attaching a volume to the PostgreSQL container ensures that the database data is stored persistently on the host machine. This way, even if the container is destroyed or recreated, the data remains intact and can be reused by the new container instance.
+Attacher un volume au conteneur PostgreSQL garantit que les données de la base de données sont stockées de manière persistante sur la machine hôte. Ainsi, même si le conteneur est détruit ou recréé, les données restent intactes et peuvent être réutilisées par la nouvelle instance du conteneur.
+
+**1-3 Document your database container essentials: commands and Dockerfile.**
+
+Done
 
 ## Backend API
 
@@ -78,6 +81,10 @@ COPY --from=myapp-build $MYAPP_HOME/target/*.jar $MYAPP_HOME/myapp.jar
 
 ENTRYPOINT ["java", "-jar", "myapp.jar"]
 ```
+Le build contient le JDK nécessaire pour compiler l'application avec Maven
+Le run contient uniquement le JRE, suffisant pour éxecuter l'application déjà compilée, rendant l'image plus légère.
+La première étape génère les artefacts nécessaires, tandis que la seconde étape ne copie que les artefacts essentiels dans l'image finale, l'image finale sera plus petite et performante.
+
 
 **1-4 Why do we need a multistage build? And explain each step of this Dockerfile.**
 
