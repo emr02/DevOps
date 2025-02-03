@@ -307,6 +307,8 @@ docker tag mypostgres wanoni/my-database:1.0
 
 # Pousser l'image vers Docker Hub :
 docker push wanoni/my-database:1.0
+
+# de même avec api et server
 ```
 
 **1-10 Why do we put our images into an online repo?**
