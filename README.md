@@ -4,10 +4,14 @@
 
 ## Dockerfile (Question 1-1) 
 
+# Build
 docker build -t mypostgres .
 
-docker run -p 5432:5432 --net=app-network --name mypostgres mypostgres
+# Run the PostgreSQL Container with Volume
 
+docker run -p 5432:5432 --net=app-network --name mypostgres -v data:/var/lib/postgresql/data mypostgres
+
+# Run Adminer
 docker run -p "8090:8080" --net=app-network --name=adminer -d adminer
 
 
@@ -21,9 +25,11 @@ COPY ./initdb /docker-entrypoint-initdb.d/ dans Dockerfile
 
 initdb folder created with sql, build and run again , it works.
 
-Verify: 
-`docker exec -it mypostgres psql -U usr -d db -c "\dt"
+# Verify Data Persistence
+```sh
 docker exec -it mypostgres psql -U usr -d db -c "SELECT * FROM departments;"
-docker exec -it mypostgres psql -U usr -d db -c "SELECT * FROM students;"`
+```
+
+
 
 
