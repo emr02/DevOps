@@ -4,6 +4,16 @@
 
 ## Dockerfile (Question 1-1) 
 
+```sh
+FROM postgres:14.1-alpine
+
+ENV POSTGRES_DB=db \
+    POSTGRES_USER=usr \
+    POSTGRES_PASSWORD=pwd
+
+COPY ./initdb /docker-entrypoint-initdb.d/
+```
+
 # Build
 docker build -t mypostgres .
 
@@ -30,6 +40,9 @@ initdb folder created with sql, build and run again , it works.
 docker exec -it mypostgres psql -U usr -d db -c "SELECT * FROM departments;"
 ```
 
+**1-2 Why do we need a volume to be attached to our postgres container?**
+
+Attaching a volume to the PostgreSQL container ensures that the database data is stored persistently on the host machine. This way, even if the container is destroyed or recreated, the data remains intact and can be reused by the new container instance.
 
 
 
