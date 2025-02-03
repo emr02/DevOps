@@ -61,7 +61,7 @@ Attacher un volume au conteneur PostgreSQL garantit que les données de la base 
 
 Done
 
-## Backend API
+## Backend API (1-4)
 
 ###  Build
 ```sh
@@ -81,52 +81,237 @@ COPY --from=myapp-build $MYAPP_HOME/target/*.jar $MYAPP_HOME/myapp.jar
 
 ENTRYPOINT ["java", "-jar", "myapp.jar"]
 ```
+Un build multistage permet d'utiliser plusieurs instructions FROM dans un seul Dockerfile. Chaque instruction FROM démarre une nouvelle étape, et nous pouvons sélectionner les artefacts à copier d'une étape à l'autre.
 Le build contient le JDK nécessaire pour compiler l'application avec Maven
 Le run contient uniquement le JRE, suffisant pour éxecuter l'application déjà compilée, rendant l'image plus légère.
 La première étape génère les artefacts nécessaires, tandis que la seconde étape ne copie que les artefacts essentiels dans l'image finale, l'image finale sera plus petite et performante.
 
+### Explication du Dockerfile
 
-**1-4 Why do we need a multistage build? And explain each step of this Dockerfile.**
+#### 1. **Phase de Build**
 
-Multistage Build: A multistage build allows us to use multiple FROM statements in a single Dockerfile. Each FROM statement starts a new stage, and we can selectively copy artifacts from one stage to another. This approach helps in creating smaller and more efficient Docker images by including only the necessary components in the final image.
+```dockerfile
+FROM maven:3.9.9-amazoncorretto-21 AS myapp-build
+```
+Utilise Maven et le JDK Amazon Corretto pour compiler l'application.
+
+```dockerfile
+WORKDIR /opt/myapp
+COPY /simpleapi/pom.xml .
+COPY /simpleapi/src ./src
+RUN mvn package -DskipTests
+```
+Définit le répertoire de travail, copie le code source et compile l'application en un fichier JAR.
+
+#### 2. **Phase d'Exécution**
+
+```dockerfile
+FROM amazoncorretto:21
+```
+Utilise l'image JRE Amazon Corretto pour l'exécution de l'application.
+
+```dockerfile
+COPY --from=myapp-build /opt/myapp/target/*.jar /opt/myapp/myapp.jar
+ENTRYPOINT ["java", "-jar", "myapp.jar"]
+```
+Copie le JAR compilé et exécute l'application avec `java -jar`.
+
+---
+
+Cette approche sépare la construction (avec JDK) et l'exécution (avec JRE) pour une image finale plus légère et optimisée.
+
+## Http server
+
+**1-5 Why do we need a reverse proxy?**
+
+Un reverse proxy est utilisé pour rediriger les requêtes des clients vers un ou plusieurs serveurs backend, en agissant comme un intermédiaire. 
+Avantages : sécurité en masquant le serveur backend, gestion du SSL/TLS etc ..
+Dans notre cas, il redirige les requêtes HTTP vers l'application backend de manière simple.
 
 ```sh
-FROM maven:3.9.9-amazoncorretto-21 AS myapp-build: This stage uses a Maven image with Amazon Corretto JDK 21 to build the application. The AS myapp-build part names this stage myapp-build.
-ENV MYAPP_HOME=/opt/myapp: Sets an environment variable MYAPP_HOME to /opt/myapp.
-WORKDIR $MYAPP_HOME: Sets the working directory to /opt/myapp.
-COPY [pom.xml](http://_vscodecontentref_/0) .: Copies the pom.xml file to the working directory.
-COPY src ./src: Copies the src directory to the working directory.
-RUN mvn package -DskipTests: Runs the Maven package goal to build the application, skipping tests.
 
-FROM amazoncorretto:21: This stage uses a smaller Amazon Corretto JRE 21 image to run the application.
-ENV MYAPP_HOME=/opt/myapp: Sets an environment variable MYAPP_HOME to /opt/myapp.
-WORKDIR $MYAPP_HOME: Sets the working directory to /opt/myapp.
-COPY --from=myapp-build $MYAPP_HOME/target/*.jar $MYAPP_HOME/myapp.jar: Copies the built JAR file from the myapp-build stage to the working directory.
-ENTRYPOINT ["java", "-jar", "myapp.jar"]: Sets the entry point to run the JAR file using the java -jar command.
-```
+# database
+docker build -t mypostgres .
+docker run -p 5432:5432 --net=app-network --name mypostgres -v data:/var/lib/postgresql/data mypostgres
 
-docker build -t simpleapi .
-docker run -p 8080:8080 --name simpleapi simpleapi
-
+# API
 docker build -t simple-api-student .
 docker run -p 8080:8080 --net=app-network --name simple-api-student simple-api-student
 
+# Server
 docker build -t simple-http-server .
-docker run -p 80:80 --name simple-http-server -d simple-http-server
+docker run -p 80:80 --net=app-network --name simple-http-server -d simple-http-server
 
+# To check
 docker stats simple-http-server
 docker inspect simple-http-server
 docker logs simple-http-server
 
+```
+
+`Dockerfile` :
+```dockerfile
+FROM httpd:2.4
+
+COPY httpd.conf /usr/local/apache2/conf/httpd.conf
+COPY ./index.html /usr/local/apache2/htdocs/
+```
+
+`httpd.conf` que on a récupéré avec : 
+```sh
 docker cp simple-http-server:/usr/local/apache2/conf/httpd.conf ./httpd.conf
+```
+```sh
+<VirtualHost *:80>
+ProxyPreserveHost On
+ProxyPass / http://simple-api-student:8080/
+ProxyPassReverse / http://simple-api-student:8080/
+</VirtualHost>
+LoadModule proxy_module modules/mod_proxy.so
+LoadModule proxy_http_module modules/mod_proxy_http.so
+```
 
-Benefits of Using docker cp to Retrieve httpd.conf
-Customization: You can modify the default configuration to add or change settings according to your requirements.
-Consistency: Ensures that you start with the default configuration provided by the image, which is known to work, and then make incremental changes.
-Version Control: You can keep the customized configuration file in version control along with your Dockerfile and other project files.
+Avantages de l'utilisation de `docker cp` pour récupérer `httpd.conf` :
 
+- **Personnalisation** : Ajuster la configuration selon les besoins.
+- **Cohérence** : Configuration par défaut qui fonctionne, puis y apporter des modifications.
+- **Contrôle de version** : Garder le fichier de configuration personnalisé, avec le Dockerfile et autres fichiers.
 
-docker build -t simple-http-server .
-docker run -p 80:80 --net=app-network --name simple-http-server -d simple-http-server
+## Link application
 
+**1-6 Why is docker-compose so important?**
+
+Docker-compose est important car il permet de gérer plusieurs conteneurs Docker avec une seule commande. Il simplifie le déploiement et l'organisation d'applications utilisant plusieurs conteneurs, en facilitant le démarrage, l'arrêt et la gestion des services d'une application. Cela permet de gagner du temps et d'assurer que la configuration est fiable et peut être reproduite facilement.
+
+---
+
+**1-8 Document docker-compose most important commands.**
+
+- **Démarrer les conteneurs** :  
+  ```shell
+  docker-compose up
+  ```
+
+- **Démarrer les conteneurs en mode détaché** (en arrière-plan) :  
+  ```shell
+  docker-compose up -d
+  ```
+
+- **Arrêter et supprimer les conteneurs** :  
+  ```shell
+  docker-compose down
+  ```
+
+- **Mettre en pause les conteneurs** :  
+  ```shell
+  docker-compose pause
+  ```
+
+- **Reprendre les conteneurs mis en pause** :  
+  ```shell
+  docker-compose unpause
+  ```
+
+- **Voir les logs des conteneurs** :  
+  ```shell
+  docker-compose logs
+  ```
+
+- **Construire les images** :  
+  ```shell
+  docker-compose build
+  ```
+
+---
+
+**1-8 Document your docker-compose file.**
+
+Voici un exemple de structure de fichier `docker-compose.yml` :
+
+```yaml
+version: '3.7'
+
+services:
+  backend:
+    build:
+      context: ./backend_api/app2
+      dockerfile: Dockerfile
+    container_name: simple-api-student
+    networks:
+      - app-network
+    depends_on:
+      - database
+
+  database:
+    build:
+      context: ./postgres
+      dockerfile: Dockerfile
+    container_name: mypostgres
+    networks:
+      - app-network
+    volumes:
+      - ./data:/var/lib/postgresql/data
+
+  httpd:
+    build:
+      context: ./http_server
+      dockerfile: Dockerfile
+    container_name: simple-http-server
+    networks:
+      - app-network
+    ports:
+      - 8040:80
+
+networks:
+  app-network:
+```
+
+#### services
+
+1. **backend** : 
+   - Construit l'image à partir de `./backend_api/app2` avec le Dockerfile.
+   - Dépend de `database` et utilise le réseau `app-network`.
+
+2. **database** : 
+   - Construit l'image à partir de `./postgres`.
+   - Utilise un volume pour persister les données dans `./data` et se connecte au réseau `app-network`.
+
+3. **httpd** : 
+   - Construit l'image à partir de `./http_server`.
+   - Expose le port `8040` local vers le port `80` du conteneur et utilise le réseau `app-network`.
+
+---
+
+#### networks
+
+```yaml
+networks:
+  app-network:
+```
+Crée un réseau `app-network` pour que tous les services puissent communiquer entre eux.
+
+En résumé, ce fichier configure un backend, une base de données PostgreSQL et un serveur HTTP, tous connectés via un réseau privé.
+
+---
+
+## Publish
+
+**1-9 Document your publication commands and published images in dockerhub.**
+
+```shell
+# Se connecter à Docker Hub :
+ docker login
+
+#Taguer votre image :
+docker tag mypostgres wanoni/my-database:1.0
+
+# Pousser l'image vers Docker Hub :
+docker push wanoni/my-database:1.0
+```
+
+---
+
+**1-10 Why do we put our images into an online repo?**
+
+Mettre nos images dans un dépôt en ligne comme Docker Hub permet de les partager facilement avec d'autres, de les sauvegarder, d'y accéder à distance et de gérer les versions. C'est essentiel pour collaborer et déployer de manière efficace.
 
