@@ -352,6 +352,7 @@ jobs:
 
       # Build and test the project using Maven
       - name: Build and test with Maven
+        # enlever --file ./simple-api/pom. et changer sonar.logn to sonar.token
         run: mvn -B verify sonar:sonar -Dsonar.projectKey=devops-project12345 -Dsonar.organization=devops-sonar123 -Dsonar.host.url=https://sonarcloud.io -Dsonar.token=${{ secrets.SONAR_TOKEN }}
         working-directory: simple-api
 
