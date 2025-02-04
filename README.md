@@ -406,5 +406,95 @@ jobs:
 
 ## Bonus: split pipelines (Optional)
 
+Build
+```yml
+name: Test Backend
 
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
 
+jobs:
+  test-backend: 
+    runs-on: ubuntu-22.04
+    steps:
+      # Checkout your GitHub code using actions/checkout@v4
+      - uses: actions/checkout@v4
+
+      # Set up JDK 21 using actions/setup-java@v3
+      - name: Set up JDK 21
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'corretto'
+          java-version: '21'
+
+      # Build and test the project using Maven
+      - name: Build and test with Maven
+        run: mvn -B verify sonar:sonar -Dsonar.projectKey=devops-project12345 -Dsonar.organization=devops-sonar123 -Dsonar.host.url=https://sonarcloud.io -Dsonar.token=${{ secrets.SONAR_TOKEN }}
+        working-directory: simple-api
+
+```
+Deploy
+```yml
+name: Build and Push Docker Image
+
+on:
+  workflow_run:
+    workflows: ["Test Backend"]
+    types:
+      - completed
+    branches: 
+      - main
+
+jobs:
+  build-and-push-docker-image:
+    if: github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main' # Ensure deploy only runs for main
+    runs-on: ubuntu-22.04
+
+    steps:
+      # Checkout the code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Log in to Docker Hub using the provided credentials
+      - name: Login to DockerHub
+        run: docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # Build the Docker image for the backend and push it to Docker Hub
+      - name: Build image and push backend
+        uses: docker/build-push-action@v3
+        with:
+          # Relative path to the place where source code with Dockerfile is located
+          context: ./simple-api
+          # Note: tags have to be all lower-case
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/tp-devops-simple-api:latest
+          # Build on feature branches, push only on main branch
+          push: ${{ github.ref == 'refs/heads/main' }}
+
+      # Build the Docker image for the database and push it to Docker Hub
+      - name: Build image and push database
+        uses: docker/build-push-action@v3
+        with:
+          context: ./database
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/tp-devops-database:latest
+          # Build on feature branches, push only on main branch
+          push: ${{ github.ref == 'refs/heads/main' }}
+
+      # Build the Docker image for the HTTP server and push it to Docker Hub
+      - name: Build image and push httpd
+        uses: docker/build-push-action@v3
+        with:
+          context: ./http-server
+<<<<<<< HEAD
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/tp-devops-httpd:latest
+=======
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/tp-devops-httpd:latest
+          # Build on feature branches, push only on main branch
+          push: ${{ github.ref == 'refs/heads/main' }}
+>>>>>>> main
+
+```
