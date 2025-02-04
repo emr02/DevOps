@@ -317,7 +317,9 @@ Mettre nos images dans un dépôt en ligne comme Docker Hub permet de les partag
 
 ---
 
-# TP2
+# TP2 : Github Actions
+
+Je me suis servi de la correction pour ce tp : https://github.com/emr02/tp-devops-correction-docker
 
 **2-1 What are testcontainers?**
 
@@ -402,6 +404,7 @@ jobs:
           push: ${{ github.ref == 'refs/heads/main' }}
 ```
 
+## Bonus: split pipelines (Optional)
 
 
 
