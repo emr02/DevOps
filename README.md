@@ -319,3 +319,10 @@ Mettre nos images dans un dépôt en ligne comme Docker Hub permet de les partag
 
 # TP2
 
+**2-1 What are testcontainers?**
+
+They simply are java libraries that allow you to run a bunch of docker containers while testing. Here we use the postgresql container to attach to our application while testing. 
+
+
+
+
