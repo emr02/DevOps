@@ -403,6 +403,27 @@ jobs:
           # build on feature branches, push only on main branch
           push: ${{ github.ref == 'refs/heads/main' }}
 ```
+**2-3 For what purpose do we need to push docker images?**
+
+On pousse des images Docker pour simplifier le déploiement, rendre l’application accessible depuis n’importe quel serveur ou cloud et automatiser les mises à jour sans configuration complexe. 
+**2.4**
+```yml
+mvn -B verify sonar:sonar -Dsonar.projectKey=devops-project12345 -Dsonar.organization=devops-sonar123 -Dsonar.host.url=https://sonarcloud.io -Dsonar.token=${{ secrets.SONAR_TOKEN }}
+```
+Cette commande exécute **Maven** pour tester et analyser le code avec **SonarCloud** :  
+
+### Décomposition :
+1. **`mvn -B`** → Exécute Maven en mode "batch" (évite les interactions utilisateur).
+2. **`verify`** → Compile et teste le projet pour vérifier son bon fonctionnement.
+3. **`sonar:sonar`** → Lance l'analyse du code avec **SonarCloud** (vérification de la qualité du code, détection de bugs, etc.).
+4. **`-Dsonar.projectKey=devops-project12345`** → Identifie le projet dans **SonarCloud**.
+5. **`-Dsonar.organization=devops-sonar123`** → Spécifie l'organisation SonarCloud associée.
+6. **`-Dsonar.host.url=https://sonarcloud.io`** → Indique l’URL du serveur SonarCloud.
+7. **`-Dsonar.token=${{ secrets.SONAR_TOKEN }}`** → Utilise un **jeton secret** pour s’authentifier et envoyer les résultats sur SonarCloud.
+
+### En résumé :
+👉 **Cette commande compile, teste et envoie l'analyse du code à SonarCloud pour évaluer sa qualité.** ✅
+
 
 ## Bonus: split pipelines (Optional)
 
@@ -438,6 +459,7 @@ jobs:
 
 ```
 Deploy
+
 ```yml
 name: Build and Push Docker Image
 
