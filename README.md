@@ -516,3 +516,22 @@ jobs:
           push: ${{ github.ref == 'refs/heads/main' }}
 
 ```
+---
+# TP3
+
+connect ssh :
+- chmod 400 id_rsa
+- ssh -i id_rsa admin@emre.elma.takima.cloud
+
+add /etc/ansible/hosts  -> add emre.elma.takima.cloud
+
+HTML affiche http://emre.elma.takima.cloud/
+
+
+ansible all -i ansible/inventories/setup.yml -m ping
+ansible-playbook -i inventories/setup.yml ansible/playbook.yml
+ansible-playbook -i inventories/setup.yml ansible/playbook.yml--syntax-check
+
+
+
+
