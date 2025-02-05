@@ -609,6 +609,10 @@ ansible-galaxy init ansible/roles/launch_proxy
 
 ne garder que tasks et handlers
 
+http://emre.elma.takima.cloud:8050/
+
+ansible-playbook -i ansible/inventories/setup.yml ansible/playbook.yml
+
 
 
 
